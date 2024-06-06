@@ -4,8 +4,11 @@ from rest_framework import status
 from rest_framework.views import APIView
 from django.http.response import HttpResponse,JsonResponse
 from accounts.models import * 
+from api_manager.models import * 
 from django.contrib.auth import logout, authenticate, login
 from accounts.serializers import *
+from api_manager.serializers import *
+from django.db import IntegrityError
 
  
 
@@ -31,20 +34,28 @@ class SignoutView(APIView):
 
 class SigninView(APIView):
     def post(self, request):
-        email = request.data.get('email')
-        password = request.data.get('password')
-        if email and password:
-            user = User.objects.filter(email=email).first()
-            if not user:
-                return Response({'message': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
-            if not user.check_password(password):
-                return Response({'message': 'Invalid password'}, status=status.HTTP_401_UNAUTHORIZED)
-            user = authenticate(email=email, password=password)
-            if user:
-                login(request, user)
-                return Response({'message': 'Login successful'}, status=status.HTTP_200_OK)
-            else:
-                return Response({'message': 'Invalid credentials'}, status=status.HTTP_401_UNAUTHORIZED)
+        if not request.user.is_authenticated:
+            email = request.data.get('email')
+            password = request.data.get('password')
+            fcmToken = request.data.get('fcm_token')
+            if email and password:
+                user = User.objects.filter(email=email).first()
+                if not user:
+                    return Response({'message': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
+                if not user.check_password(password):
+                    return Response({'message': 'Invalid password'}, status=status.HTTP_401_UNAUTHORIZED)
+                user = authenticate(email=email, password=password)
+                if user:
+                    login(request, user)
+                    if fcmToken:
+                        add_device_response = add_device(request,fcmToken)
+                        fcm_response = {'fcm_response': add_device_response}
+                    return Response({'message': 'Login successful','data': fcm_response}, status=status.HTTP_200_OK)
+                else:
+                    return Response({'message': 'Invalid credentials'}, status=status.HTTP_401_UNAUTHORIZED)
+        else: 
+            return Response({'message': 'User already authenticated',}, status=status.HTTP_200_OK)
+
 
 
 class SignupView(APIView):
@@ -93,4 +104,48 @@ class SignupView(APIView):
 
 
         return JsonResponse(response_data_s)
-    
+
+
+
+
+
+def add_device(request, fcmToken):
+    if request.method == 'POST':
+        user = request.user
+        if fcmToken:
+            if user.is_authenticated:
+                try:
+                    device = Device.objects.get(fcm_token = fcmToken)
+                    device.user = user
+                    device.save()
+                    data = {'result':'success','message':'fcm token saved to current user','device': DeviceSerializer(device).data}
+                except Device.DoesNotExist:
+                    try:
+                        device = Device.objects.create(user = user, fcm_token = fcmToken)
+                        data = {'result':'success','message':'fcm token saved to user','device': DeviceSerializer(device).data}
+                    except IntegrityError:
+                        data = {'result':'success','message':'fcm token already exists'}
+                except Exception as e:
+                    data = {'result':'failed','message':str(e)}
+                return data
+            else:
+                try:
+                    device = Device.objects.get(fcm_token = fcmToken)
+                    device.user = None
+                    device.save()
+                    data = {'result':'success','message':'fcm token saved to anonymous user','device': DeviceSerializer(device).data}
+                except Device.DoesNotExist:
+                    try:
+                        device = Device.objects.create(fcm_token = fcmToken)
+                        data = {'result':'success','message':'fcm token saved to anonymous user','device': DeviceSerializer(device).data}
+                    except IntegrityError:
+                        data = {'result':'success','message':'fcm token already exists'}
+                except Exception as e:
+                    data = {'result':'failed','message':str(e)}
+                return data
+        else:
+            data = {'result':'failed','message':'fcm token not found'}
+            return data
+
+
+
