@@ -1,7 +1,8 @@
 from django.db import models
+from io import BytesIO
+from django.core.files.uploadedfile import InMemoryUploadedFile
+from PIL import Image
 
-# Create your models here.
-from django.db import models
 
 class ImageModel(models.Model):
-    image = models.ImageField(upload_to='images/')
+    image = models.ImageField(upload_to='images/', null=True)

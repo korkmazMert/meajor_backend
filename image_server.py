@@ -2,6 +2,7 @@ import grpc
 from concurrent import futures
 from protos import imageservice_pb2
 from protos import imageservice_pb2_grpc
+import datetime
 
 import os
 from django.core.wsgi import get_wsgi_application
@@ -13,16 +14,37 @@ from image_manager.models import ImageModel
 import sqlite3
 import logging
 from django.core.files.base import ContentFile
+import io
+from PIL import Image
+from django.core.files.images import ImageFile
 
 
 
 def process_image(image_bytes):
-    ## Save the image to the database
-    image_file = ContentFile(image_bytes)
-    image_model = ImageModel.objects.create(image=image_file)
-    image_model.save()
+    try:
+        current_date = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        image_name = f'size_measured_image_{current_date}.jpg'
+        image = ImageFile(io.BytesIO(image_bytes), name=image_name)
+        image_model = ImageModel.objects.create(image=image)
+        image_model.save()
+        print(f"Saved image  {image_model}")
+        print(f"Image itself: {image_model.image}"),
 
-    return image_bytes
+        #open the saved image
+        open_image = Image.open(image_model.image)
+        open_image.show()
+
+            # Open the saved image file in binary mode
+        with open(image_model.image.path, 'rb') as img_file:
+            # Read the entire file into a bytes object
+            saved_image_bytes = img_file.read()
+
+
+        return saved_image_bytes
+    except Exception as e:
+        print(f"An error occurred: {e}")
+        return None
+
 
 class ImageServiceServicer(imageservice_pb2_grpc.ImageServiceServicer):
     def ProcessImage(self, request, context):
