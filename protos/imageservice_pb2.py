@@ -14,7 +14,7 @@ _sym_db = _symbol_database.Default()
 
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x19protos/imageservice.proto\x12\x0cimageservice\"\x1f\n\x0eImageGrpcModel\x12\r\n\x05image\x18\x01 \x01(\x0c\x32Z\n\x0cImageService\x12J\n\x0cProcessImage\x12\x1c.imageservice.ImageGrpcModel\x1a\x1c.imageservice.ImageGrpcModelb\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x19protos/imageservice.proto\x12\x0cimageservice\";\n\x0eImageGrpcModel\x12\r\n\x05image\x18\x01 \x01(\x0c\x12\n\n\x02id\x18\x02 \x01(\x05\x12\x0e\n\x06userid\x18\x03 \x01(\x05\x32Z\n\x0cImageService\x12J\n\x0cProcessImage\x12\x1c.imageservice.ImageGrpcModel\x1a\x1c.imageservice.ImageGrpcModelb\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
@@ -22,7 +22,7 @@ _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'protos.imageservice_pb2', _
 if not _descriptor._USE_C_DESCRIPTORS:
   DESCRIPTOR._loaded_options = None
   _globals['_IMAGEGRPCMODEL']._serialized_start=43
-  _globals['_IMAGEGRPCMODEL']._serialized_end=74
-  _globals['_IMAGESERVICE']._serialized_start=76
-  _globals['_IMAGESERVICE']._serialized_end=166
+  _globals['_IMAGEGRPCMODEL']._serialized_end=102
+  _globals['_IMAGESERVICE']._serialized_start=104
+  _globals['_IMAGESERVICE']._serialized_end=194
 # @@protoc_insertion_point(module_scope)
