@@ -1,0 +1,12 @@
+syntax = "proto3";
+
+package imageservice;
+
+service ImageService {
+  rpc ProcessImage(ImageGrpcModel) returns (ImageGrpcModel);
+}
+
+message ImageGrpcModel {
+  bytes image = 1;
+}
+
