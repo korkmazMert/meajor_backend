@@ -13,6 +13,7 @@ class AccountInfoView(APIView):
         user = request.user
         if user.is_authenticated:
             user_serialized = UserSerializer(user).data
-            return Response({'user': user_serialized}, status=status.HTTP_200_OK)
+            return Response({'result': 'success','message': 'account info fetched successfuly','user': user_serialized}, status=status.HTTP_200_OK)
         else:
-            return Response({'message': 'User not authenticated'}, status=status.HTTP_401_UNAUTHORIZED)
+            return Response({'result': 'failed','message': 'User not authenticated'}, status=status.HTTP_401_UNAUTHORIZED)
+        

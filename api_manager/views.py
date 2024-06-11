@@ -10,6 +10,7 @@ from accounts.serializers import *
 from api_manager.serializers import *
 from django.db import IntegrityError
 
+from rest_framework.authentication import SessionAuthentication
  
 
 
@@ -25,36 +26,115 @@ from django.db import IntegrityError
 #     else:
 #         print(f"No superuser found with email {superuser_email}.")
 #         return HttpResponse('No superuser found with email')
+
+class SessionCsrfExemptAuthentication(SessionAuthentication):
+    def enforce_csrf(self, request):
+        pass
     
 class SignoutView(APIView):
     def get(self, request):
-        logout(request)
-        return Response({'message': 'Logout successful'}, status=status.HTTP_200_OK)
+        if not request.user.is_authenticated:
+            return Response({'result':'failed','message': 'User not authenticated'}, status=status.HTTP_400_BAD_REQUEST)
+        try:
+            logout(request)
+            return Response({'result':'success','message': 'Logout successful'}, status=status.HTTP_200_OK)
+        except:
+            return Response({'result':'failed','message': 'Logout failed'}, status=status.HTTP_400_BAD_REQUEST)
+
+
+
+
+class SuperUserSignin(APIView):
+    def get(self, request):
+        try:
+            if not request.user.is_authenticated:
+                email = 'deneme2@deneme.com'
+                password = '123'
+                fcmToken = 'websocket_token'
+                fcm_response = {}  # Define fcm_response here
+
+                print('inside signinview',request.data)
+
+                if email and password:
+                    user = User.objects.filter(email=email).first()
+                    if not user:
+                        return JsonResponse({'result':'failed','message': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
+                    if not user.check_password(password):
+                        return JsonResponse({'result':'failed','message': 'Invalid password'}, status=status.HTTP_401_UNAUTHORIZED)
+                    user = authenticate(email=email, password=password)
+                    if user:
+                        login(request, user)
+                        if fcmToken:
+                            add_device_response = add_device(request,fcmToken)
+                            fcm_response = {'fcm_response': add_device_response}  # Update fcm_response here
+                        return JsonResponse({
+                            'result': 'success',
+                            'message': 'Login successful',
+                            'data': fcm_response}, 
+                            status=status.HTTP_200_OK)
+                    else:
+                        return JsonResponse({
+                            'result':'failed',
+                            'message': 'Invalid credentials'}, 
+                            status=status.HTTP_401_UNAUTHORIZED)
+            else: 
+                return JsonResponse({
+                    'result':'failed',
+                    'message': 'User already authenticated',}, 
+                    status=status.HTTP_200_OK)
+        except Exception as e:
+            return JsonResponse({
+                'result':'failed',
+                'message': e,
+                }, 
+                status=status.HTTP_400_BAD_REQUEST)
+        
 
 
 class SigninView(APIView):
     def post(self, request):
-        if not request.user.is_authenticated:
-            email = request.data.get('email')
-            password = request.data.get('password')
-            fcmToken = request.data.get('fcm_token')
-            if email and password:
-                user = User.objects.filter(email=email).first()
-                if not user:
-                    return Response({'message': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
-                if not user.check_password(password):
-                    return Response({'message': 'Invalid password'}, status=status.HTTP_401_UNAUTHORIZED)
-                user = authenticate(email=email, password=password)
-                if user:
-                    login(request, user)
-                    if fcmToken:
-                        add_device_response = add_device(request,fcmToken)
-                        fcm_response = {'fcm_response': add_device_response}
-                    return Response({'message': 'Login successful','data': fcm_response}, status=status.HTTP_200_OK)
-                else:
-                    return Response({'message': 'Invalid credentials'}, status=status.HTTP_401_UNAUTHORIZED)
-        else: 
-            return Response({'message': 'User already authenticated',}, status=status.HTTP_200_OK)
+        try:
+            if not request.user.is_authenticated:
+                email = request.data.get('email')
+                password = request.data.get('password')
+                fcmToken = request.data.get('fcm_token')
+                fcm_response = {}  # Define fcm_response here
+
+                print('inside signinview',request.data)
+
+                if email and password:
+                    user = User.objects.filter(email=email).first()
+                    if not user:
+                        return JsonResponse({'result':'failed','message': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
+                    if not user.check_password(password):
+                        return JsonResponse({'result':'failed','message': 'Invalid password'}, status=status.HTTP_401_UNAUTHORIZED)
+                    user = authenticate(email=email, password=password)
+                    if user:
+                        login(request, user)
+                        if fcmToken:
+                            add_device_response = add_device(request,fcmToken)
+                            fcm_response = {'fcm_response': add_device_response}  # Update fcm_response here
+                        return JsonResponse({
+                            'result': 'success',
+                            'message': 'Login successful',
+                            'data': fcm_response}, 
+                            status=status.HTTP_200_OK)
+                    else:
+                        return JsonResponse({
+                            'result':'failed',
+                            'message': 'Invalid credentials'}, 
+                            status=status.HTTP_401_UNAUTHORIZED)
+            else: 
+                return JsonResponse({
+                    'result':'failed',
+                    'message': 'User already authenticated',}, 
+                    status=status.HTTP_200_OK)
+        except Exception as e:
+            return JsonResponse({
+                'result':'failed',
+                'message': e,
+                }, 
+                status=status.HTTP_400_BAD_REQUEST)
 
 
 

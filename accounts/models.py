@@ -3,7 +3,11 @@ from django.contrib.auth.models import AbstractBaseUser,BaseUserManager, Permiss
 from django.utils import timezone
 import uuid
 
+class ActivationUser(models.Model):
+    user_secret = models.CharField(max_length=254, null=True, blank=True)
+    last_activity = models.DateTimeField(auto_now=True)
 
+    
 class UserManager(BaseUserManager):
 
   def _create_user(self, email, first_name, last_name, password, is_staff, is_superuser, **extra_fields):

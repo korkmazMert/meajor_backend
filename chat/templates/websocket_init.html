@@ -1,0 +1,21 @@
+{% load static %}
+
+<script src="{% static 'js/chat/chat.js' %}"></script>
+
+<script>
+
+  
+  document.addEventListener('DOMContentLoaded', (event) => {
+    console.log('websocket_init.html');
+    
+    console.log("onlaaaoad");
+    var control_id = "{{ my_activation_user }}";
+    console.log("controlllll_id", control_id);
+    chat.init(control_id);
+
+   
+  });
+  window.addEventListener('beforeunload', (event) => {
+    chat.onclose();
+  });
+</script>

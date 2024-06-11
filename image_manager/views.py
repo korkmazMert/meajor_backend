@@ -129,6 +129,7 @@ def save_image_to_db(request):
 
         image_model = ImageModel.objects.create(image=image, user=current_user)
         image_model.save()
+        print(f"Image saved: {image_model}")
 
 
 
@@ -153,7 +154,11 @@ def save_image_to_db(request):
 
         except Exception as e:
             print(f"Error in detect_and_measure: {e}")
-            return JsonResponse({'message': str(e)}, status=400)
+            return JsonResponse({
+                'failed':'failed',
+                'message': str(e)}, 
+                status=400
+                )
 
 
         image_model_serialized = ImageSerializer(image_model).data
