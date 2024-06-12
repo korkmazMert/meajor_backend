@@ -11,6 +11,7 @@ from api_manager.serializers import *
 from django.db import IntegrityError
 
 from rest_framework.authentication import SessionAuthentication
+from meajor_backend.context_processors import UserActivation
  
 
 
@@ -42,7 +43,28 @@ class SignoutView(APIView):
             return Response({'result':'failed','message': 'Logout failed'}, status=status.HTTP_400_BAD_REQUEST)
 
 
+def get_control_id(request):
+    try:
+        # get control_id
+        my_activation_user = 'null'
 
+        if request.user.is_authenticated:
+            my_activation_user = request.user.id
+        else:
+            active_users = UserActivation(request)
+            my_activation_user = list(active_users.get_my_user())[0]
+        
+        return  JsonResponse({
+            'result':'success',
+            'message':'my_activiation_user fetched successfuly',
+            'my_activation_user': my_activation_user
+            })
+    except:
+        return  JsonResponse({
+            'result':'success','message':
+            'my_activiation_user fetched successfuly',
+            'my_activation_user': 'null'
+            })
 
 class SuperUserSignin(APIView):
     def get(self, request):

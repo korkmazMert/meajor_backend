@@ -3,6 +3,7 @@ from . import views
 
 urlpatterns = [
     # path('api/delete_superuser/', views.delete_superuser, name='delete_superuser'),
+    path('api/get_control_id/', views.get_control_id, name='api_get_control_id'),
     
     path('api/signin/', views.SigninView.as_view(), name='api_signin'),
     path('api/signup/', views.SignupView.as_view(), name='api_signup'),
