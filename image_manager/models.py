@@ -10,4 +10,10 @@ class ImageModel(models.Model):
     processed_image = models.ImageField(upload_to='processed_images/', null=True)
     widths = models.JSONField(null=True)
     heights = models.JSONField(null=True)
+    selected_width = models.JSONField(null=True)
+    selected_height = models.JSONField(null=True)
+    weight = models.FloatField(null=True)
+    total_cost = models.FloatField(null=True)
+    to_where = models.CharField(max_length=255, null=True)
+    from_where = models.CharField(max_length=255, null=True)
     

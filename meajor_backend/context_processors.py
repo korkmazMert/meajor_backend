@@ -5,9 +5,7 @@ from datetime import timedelta
 
 
 class UserActivation:
-
     def __init__(self, request):
-
         """
         UserActivation objesi oluşturulurken.
         """
@@ -26,32 +24,28 @@ class UserActivation:
             my_id = ''
             for item in self.activation.keys():
                 my_id = str(item)
-            exist_active = ActivationUser.objects.get(user_secret = my_id)
+            exist_active = ActivationUser.objects.filter(user_secret = my_id).first()
             exist_active.last_activity = timezone.now()
             exist_active.save()
-
-
         self.save()
-
 
     def save(self):
         self.session[settings.USER_SESSION_ID] = self.activation
         self.session.modified = True
-
+    
+    def get_my_user(self):
+        my_user = self.activation.keys()
+        return my_user
 
     def get_total_users(self):
         """
         Aktif kullanıcı adedini verir
         """
         online_users = ActivationUser.objects.filter(last_activity__gte = timezone.now() - timedelta(minutes=5)).count()
-
         return online_users
 
 
 
-    def get_my_user(self):
-        my_user = self.activation.keys()
-        return my_user
 
 def user_activation(request):
     return {'activation':UserActivation(request)}

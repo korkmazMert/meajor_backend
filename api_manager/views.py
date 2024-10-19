@@ -47,23 +47,27 @@ def get_control_id(request):
     try:
         # get control_id
         my_activation_user = 'null'
+        is_superuser = False
+        if request.user.is_superuser:
+            is_superuser = True
 
         if request.user.is_authenticated:
             my_activation_user = request.user.id
         else:
             active_users = UserActivation(request)
             my_activation_user = list(active_users.get_my_user())[0]
+            my_activation_user = int(my_activation_user)
         
         return  JsonResponse({
             'result':'success',
             'message':'my_activiation_user fetched successfuly',
-            'my_activation_user': my_activation_user
+            'my_activation_user': int(my_activation_user),
+            'is_superuser': is_superuser,
             })
     except:
         return  JsonResponse({
-            'result':'success','message':
-            'my_activiation_user fetched successfuly',
-            'my_activation_user': 'null'
+            'result':'failed',
+            'message':'my_activiation_user failed to fetch'
             })
 
 class SuperUserSignin(APIView):

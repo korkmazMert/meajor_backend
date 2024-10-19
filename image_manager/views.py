@@ -24,6 +24,10 @@ from datetime import datetime
 from django.core.files.images import ImageFile
 from accounts.models import User    
 from django.core.files.uploadedfile import InMemoryUploadedFile
+from rest_framework.views import APIView
+from rest_framework import status
+from django.http.response import JsonResponse
+from rest_framework.response import Response
 
 def detect_and_measure(image_path):
     widths_cm = []
@@ -99,9 +103,15 @@ def get_images(self):
 
 
 def get_image(self, image_id):
-    image = ImageModel.objects.get(id=image_id)
-    image_serialized = ImageSerializer(image).data
-    return JsonResponse({'image': image_serialized})
+    try:
+        image = ImageModel.objects.get(id=image_id)
+        image_serialized = ImageSerializer(image).data
+        
+        return JsonResponse({'result':'success','image': image_serialized})
+    except ImageModel.DoesNotExist:
+        return JsonResponse({'result':'failed','message': 'Image not found'}, status=404)
+    except Exception as e:
+        return JsonResponse({'result':'failed','message': str(e)}, status=400)
 
 
 def get_users_images(request):
@@ -115,59 +125,65 @@ def get_users_images(request):
 def save_image_to_db(request):
     if request.method == 'POST':
         image = request.FILES.get('image')
-        user_id = request.user.id
-        if image is None:
-            return JsonResponse({'message': 'No image file received'}, status=400)
+        is_image_processed = request.POST.get('is_image_processed', False)
+        if request.user.is_authenticated:
+            user_id = request.user.id
+            if image is None:
+                return JsonResponse({'message': 'No image file received'}, status=400)
 
-        current_date = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        image_name = f'original_image_{current_date}.jpg'
-        # # Convert the uploaded file to bytes
-        # image_bytes = image.file.read()
-        # image = ImageFile(io.BytesIO(image_bytes), name=image_name)
+            current_date = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            image_name = f'original_image_{current_date}.jpg'
+            # # Convert the uploaded file to bytes
+            # image_bytes = image.file.read()
+            # image = ImageFile(io.BytesIO(image_bytes), name=image_name)
 
-        current_user = User.objects.get(id=user_id)
+            current_user = User.objects.get(id=user_id)
 
-        image_model = ImageModel.objects.create(image=image, user=current_user)
-        image_model.save()
-        print(f"Image saved: {image_model}")
-
-
-
-        # Process the image and get the id of the saved image model
-        try:
-            print(f"Image path: {image_model.image.path}")
-            measured_image, heights, widths = detect_and_measure(image_model.image.path)
-            image_model.heights = heights
-            image_model.widths = widths
-            measured_image.show()
-
-            # Convert the measured_image to bytes
-            img_byte_arr = io.BytesIO()
-            measured_image.save(img_byte_arr, format='JPEG')
-            img_byte_arr = img_byte_arr.getvalue()
-
-            # Save the measured_image as an ImageFile
-            measured_image_name = f'measured_image_{current_date}.jpg'
-            measured_image_file = ImageFile(io.BytesIO(img_byte_arr), name=measured_image_name)
-            image_model.processed_image = measured_image_file
+            image_model = ImageModel.objects.create(image=image, user=current_user)
             image_model.save()
+            print(f"Image saved: {image_model}")
 
-        except Exception as e:
-            print(f"Error in detect_and_measure: {e}")
+            if is_image_processed:
+                image_model.processed_image = image
+                image_model.save()
+            else:
+                # Process the image and get the id of the saved image model
+                try:
+                    print(f"Image path: {image_model.image.path}")
+                    measured_image, heights, widths = detect_and_measure(image_model.image.path)
+                    image_model.heights = heights
+                    image_model.widths = widths
+                    measured_image.show()
+
+                    # Convert the measured_image to bytes
+                    img_byte_arr = io.BytesIO()
+                    measured_image.save(img_byte_arr, format='JPEG')
+                    img_byte_arr = img_byte_arr.getvalue()
+
+                    # Save the measured_image as an ImageFile
+                    measured_image_name = f'measured_image_{current_date}.jpg'
+                    measured_image_file = ImageFile(io.BytesIO(img_byte_arr), name=measured_image_name)
+                    image_model.processed_image = measured_image_file
+                    image_model.save()
+
+                except Exception as e:
+                    print(f"Error in detect_and_measure: {e}")
+                    return JsonResponse({
+                        'result':'failed',
+                        'message': str(e)}, 
+                        status=400
+                        )
+
+
+            image_model_serialized = ImageSerializer(image_model).data
+
             return JsonResponse({
-                'failed':'failed',
-                'message': str(e)}, 
-                status=400
-                )
-
-
-        image_model_serialized = ImageSerializer(image_model).data
-
-        return JsonResponse({
-            'result': 'success',
-            'message': 'Image saved successfully',
-            'image': image_model_serialized,
-            })
+                'result': 'success',
+                'message': 'Image saved successfully',
+                'image': image_model_serialized,
+                })
+        else:
+            return JsonResponse({'result':'failed','message': 'User not authenticated'}, status=401)
     return JsonResponse({'message': 'Invalid request method'}, status=405)
 
 

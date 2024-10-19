@@ -6,3 +6,4 @@ class ImageSerializer(serializers.ModelSerializer):
     class Meta:
         model = ImageModel
         fields = '__all__'
+        

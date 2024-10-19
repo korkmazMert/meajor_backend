@@ -10,26 +10,30 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
     @database_sync_to_async
     def check_receiver_online(self, user_id):
-        room = ChatRoom.objects.filter(id=self.room_name).first()
-        print('room.online_users: ',room.online_users)
-        online_users_temp = list(json.loads(room.online_users)) if room.online_users else []
-        len_before = len(online_users_temp)
-        online_users_temp.remove(str(user_id))
-        len_after = len(online_users_temp)
-        if len_after >  0 :
-            is_read = True
-        else:
-            is_read = False
-        return is_read
+       try:
+            room = ChatRoom.objects.filter(id=self.room_name).first()
+            print('room.online_users: ',room.online_users)
+            online_users_temp = list(json.loads(room.online_users)) if room.online_users else []
+            len_before = len(online_users_temp)
+            online_users_temp.remove(str(user_id))
+            len_after = len(online_users_temp)
+            if len_after >  0 :
+                is_read = True
+            else:
+                is_read = False
+            return is_read
+       except Exception as e:
+              print('error:',e)
+              return False
     
 
     @database_sync_to_async
     def save_message_to_db(self, msg, user_id,user_active,sender_name,is_read=False):
-        booleanUserActive = user_active.lower() == "true"
+        
         read_time = None
         if is_read:
             read_time = datetime.now()        
-        if booleanUserActive:
+        if user_active:
             return Message.objects.create(
                 room_id=self.room_name, 
                 message=msg, 
@@ -423,14 +427,14 @@ class ChatConsumer(AsyncWebsocketConsumer):
             await self.send(text_data=json.dumps({
                 'message': "someone has entered the chat room.",
                 'type': 'connected',
-                'user_id': self.control_id,
+                'user_id': int(self.control_id),
                 'receiver_online': is_read
             }))
         else:
             await self.send(text_data=json.dumps({
                 'message': "someone has entered the chat room.",
                 'type': 'connected',
-                'user_id': self.control_id
+                'user_id':  int(self.control_id)
             }))
 
     # Handler for when a user leaves
@@ -439,7 +443,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
         await self.send(text_data=json.dumps({
             'message': "someone has leaved the chat room.",
             'type': 'disconnected',
-            'user_id': self.control_id
+            'user_id': int(self.control_id)
         }))
 
 
